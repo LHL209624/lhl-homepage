@@ -1315,20 +1315,28 @@
                     </div>
                 </div>
                 <div class="contact-form fade-in">
-                    <form id="contactForm">
+                    <form id="contactForm" action="https://api.web3forms.com/submit" method="POST">
+                        <!-- Web3Forms 配置 -->
+                        <input type="hidden" name="access_key" value="67e7a7ed-ee15-41d8-b7ca-43c6d61921d4">
+                        <input type="hidden" name="subject" value="【刘和良个人网站】新消息">
+                        <input type="hidden" name="from_name" value="刘和良个人网站">
+                        <input type="hidden" name="replyto" value="3824156469@qq.com">
+                        <!-- 防垃圾邮件 -->
+                        <input type="checkbox" name="botcheck" class="hidden" style="display: none;">
+
                         <div class="form-group">
                             <label for="name">姓名</label>
-                            <input type="text" id="name" name="name" placeholder="请输入您的姓名">
+                            <input type="text" id="name" name="name" placeholder="请输入您的姓名" required>
                             <div class="form-error">请输入姓名</div>
                         </div>
                         <div class="form-group">
                             <label for="email">邮箱</label>
-                            <input type="email" id="email" name="email" placeholder="请输入您的邮箱">
+                            <input type="email" id="email" name="email" placeholder="请输入您的邮箱" required>
                             <div class="form-error">请输入有效的邮箱地址</div>
                         </div>
                         <div class="form-group">
                             <label for="message">留言</label>
-                            <textarea id="message" name="message" placeholder="请输入您的留言"></textarea>
+                            <textarea id="message" name="message" placeholder="请输入您的留言" required></textarea>
                             <div class="form-error">请输入留言内容</div>
                         </div>
                         <button type="submit" class="btn-submit">
@@ -1423,7 +1431,8 @@
         const contactForm = document.getElementById('contactForm');
         const toast = document.getElementById('toast');
 
-        function showToast() {
+        function showToast(msg) {
+            toast.querySelector('span').textContent = msg;
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -1435,7 +1444,7 @@
             return re.test(email);
         }
 
-        contactForm.addEventListener('submit', (e) => {
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             let isValid = true;
 
@@ -1466,9 +1475,33 @@
                 isValid = false;
             }
 
-            if (isValid) {
-                showToast();
-                contactForm.reset();
+            if (!isValid) return;
+
+            // 提交到 Web3Forms
+            const formData = new FormData(contactForm);
+            const submitBtn = contactForm.querySelector('.btn-submit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发送中...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(contactForm.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('消息已发送成功！我会尽快回复您。');
+                    contactForm.reset();
+                } else {
+                    showToast('发送失败，请稍后重试。');
+                }
+            } catch (error) {
+                showToast('网络错误，请检查网络连接。');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         });
 
